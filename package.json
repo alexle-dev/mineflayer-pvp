@@ -1,6 +1,6 @@
 {
-  "name": "mineflayer-pvp",
-  "version": "1.3.2",
+  "name": "@alexle/mineflayer-pvp",
+  "version": "1.3.3",
   "description": "Adds support for basic PVP and PVE to Mineflayer bots.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheDudeFromCI/mineflayer-pvp.git"
+    "url": "git+https://github.com/alexle-dev/mineflayer-pvp.git"
   },
   "keywords": [
     "mineflayer",
@@ -21,19 +21,19 @@
   "author": "TheDudeFromCI",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/TheDudeFromCI/mineflayer-pvp/issues"
+    "url": "https://github.com/alexle-dev/mineflayer-pvp/issues"
   },
-  "homepage": "https://github.com/TheDudeFromCI/mineflayer-pvp#readme",
+  "homepage": "https://github.com/alexle-dev/mineflayer-pvp#readme",
   "dependencies": {
-    "mineflayer": "^4.0.0",
-    "mineflayer-pathfinder": "^2.0.0",
+    "mineflayer": "^4.11.0",
+    "mineflayer-pathfinder": "^2.4.4",
     "mineflayer-utils": "^0.1.4"
   },
   "devDependencies": {
-    "@types/node": "^15.14.9",
+    "@types/node": "^20.5.0",
     "require-self": "^0.2.3",
-    "standard": "^17.0.0",
-    "typescript": "^5.0.4"
+    "standard": "^17.1.0",
+    "typescript": "^5.1.6"
   },
   "files": [
     "lib/**/*"
