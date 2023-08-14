@@ -1,6 +1,6 @@
 import * as attackSpeeds from './AttackSpeeds.json';
 
-export function getAttackSpeed(weaponName: string): number
+export function getAttackSpeed(weaponName?: string): number
 {
     if (!weaponName) return attackSpeeds.other;
     return (<any>attackSpeeds)[weaponName] || attackSpeeds.other;
@@ -13,7 +13,7 @@ function clamp(x: number, min: number, max: number): number
     return x;
 }
 
-export function getCooldown(weaponName: string): number
+export function getCooldown(weaponName?: string): number
 {
     const speed = getAttackSpeed(weaponName);
     return Math.floor(1 / speed * 20);

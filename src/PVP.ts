@@ -1,47 +1,36 @@
-import { Bot } from "mineflayer";
-import { Movements, Pathfinder, goals } from "mineflayer-pathfinder";
-import { Entity } from "prismarine-entity";
-import { MaxDamageOffset, TimingSolver } from "./TimingSolver";
-import { TaskQueue } from 'mineflayer-utils';
+import {Bot} from "mineflayer";
+import {goals, Movements, Pathfinder} from "mineflayer-pathfinder";
+import {MaxDamageOffset, TimingSolver} from "./TimingSolver";
+import {TaskQueue} from 'mineflayer-utils';
+import {Entity} from "prismarine-entity";
 
 /**
  * The main pvp manager plugin class.
  */
-export class PVP
-{
-    private readonly bot: Bot;
-    private timeToNextAttack: number = 0;
-    private wasInRange: boolean = false;
-    private blockingExplosion: boolean = false;
-
+export class PVP {
     /**
      * The current target. This value should never be assigned to from outside the plugin.
      */
     target?: Entity;
-
     /**
      * The movements object to pass to pathfinder when creating the follow entity goal. Assign
      * to null in order to avoid passing any movement config to pathfinder. (If you plan on using
      * your own)
      */
     movements?: Movements;
-
     /**
      * How close the bot will attempt to get to the target when when pursuing it.
      */
     followRange: number = 2;
-
     /**
      * How far away the target entity must be to lose the target. Target entities further than this
      * distance from the bot will be considered defeated.
      */
     viewDistance: number = 128;
-
     /**
      * How close must the bot be to the target in order to try attacking it.
      */
     attackRange: number = 3.0;
-
     /**
      * The timing solver to use when deciding how long to wait before preforming another attack
      * after finishing an attack.
@@ -49,19 +38,26 @@ export class PVP
      * // TODO Check for 'hasAtttackCooldown' feature. If feature not present, default to RandomTicks solver.
      */
     meleeAttackRate: TimingSolver = new MaxDamageOffset();
+    criticalHitPercentage: number = 0.5;
+
+    private readonly bot: Bot;
+    private timeToNextAttack: number = 0;
+    private wasInRange: boolean = false;
+    private blockingExplosion: boolean = false;
 
     /**
      * Creates a new instance of the PVP plugin.
      *
      * @param bot - The bot this plugin is being attached to.
      */
-    constructor(bot: Bot)
-    {
+    constructor(bot: Bot) {
         this.bot = bot;
-        this.movements = new Movements(bot, require('minecraft-data')(bot.version));
+        this.movements = new Movements(bot);
 
         this.bot.on('physicTick', () => this.update());
-        this.bot.on('entityGone', e => { if (e === this.target) this.stop(); })
+        this.bot.on('entityGone', e => {
+            if (e === this.target) this.stop();
+        })
     }
 
     /**
@@ -69,8 +65,7 @@ export class PVP
      *
      * @param target - The target to attack.
      */
-    async attack(target: Entity): Promise<void>
-    {
+    async attack(target: Entity): Promise<void> {
         if (target === this.target) return;
 
         await this.stop();
@@ -82,6 +77,7 @@ export class PVP
         const pathfinder: Pathfinder = this.bot.pathfinder;
         if (this.movements) pathfinder.setMovements(this.movements);
 
+        // @ts-expect-error
         pathfinder.setGoal(new goals.GoalFollow(this.target, this.followRange), true);
 
         // @ts-expect-error
@@ -91,8 +87,7 @@ export class PVP
     /**
      * Stops attacking the current entity.
      */
-    async stop(): Promise<void>
-    {
+    async stop(): Promise<void> {
         if (this.target == null) return
 
         this.target = undefined;
@@ -117,9 +112,9 @@ export class PVP
      * @param timeout Timeout in ms
      * @returns {Promise<void>}
      */
-    async onceWithTimeout(eventName: string, timeout: number): Promise<void>
-    {
-        let callback = () => {}
+    async onceWithTimeout(eventName: string, timeout: number): Promise<void> {
+        let callback = () => {
+        }
         let timeoutId: NodeJS.Timeout
         const cleanup = (): void => {
             clearTimeout(timeoutId)
@@ -142,8 +137,7 @@ export class PVP
      * Stops attacking the current entity. Force stops pathfinder. May result in the bot falling off of things or failing jumps.
      * @returns void
      */
-    forceStop(): void
-    {
+    forceStop(): void {
         if (this.target == null) return
 
         this.target = undefined;
@@ -158,8 +152,7 @@ export class PVP
     /**
      * Called each tick to update attack timers.
      */
-    private update(): void
-    {
+    private update(): void {
         this.checkExplosion();
         this.checkRange();
 
@@ -173,15 +166,13 @@ export class PVP
     /**
      * Updates whether the bot is in attack range of the target or not.
      */
-    private checkRange(): void
-    {
+    private checkRange(): void {
         if (!this.target) return;
         if (this.timeToNextAttack < 0) return;
 
         const dist = this.target.position.distanceTo(this.bot.entity.position);
 
-        if (dist > this.viewDistance)
-        {
+        if (dist > this.viewDistance) {
             this.stop();
             return;
         }
@@ -222,12 +213,10 @@ export class PVP
     /**
      * Attempts to preform an attack on the target.
      */
-    private attemptAttack()
-    {
+    private attemptAttack() {
         if (!this.target) return;
 
-        if (!this.wasInRange)
-        {
+        if (!this.wasInRange) {
             this.timeToNextAttack = this.meleeAttackRate.getTicks(this.bot);
             return;
         }
@@ -236,8 +225,7 @@ export class PVP
         const target = this.target;
         const shield = this.hasShield();
 
-        if (shield)
-        {
+        if (shield) {
             queue.addSync(() => this.bot.deactivateItem())
             queue.add(cb => setTimeout(cb, 100))
         }
@@ -249,14 +237,19 @@ export class PVP
 
         queue.addSync(() => {
             if (target !== this.target) throw 'Target changed!';
+
+            if (Math.random() < this.criticalHitPercentage) {
+                this.bot.setControlState('jump', true);
+            }
+
+            // @ts-expect-error
             this.bot.attack(this.target);
 
             // @ts-expect-error
             this.bot.emit('attackedTarget');
         });
 
-        if (shield)
-        {
+        if (shield) {
             queue.add(cb => setTimeout(cb, 150))
             queue.addSync(() => {
                 if (target !== this.target) throw 'Target changed!';
@@ -274,8 +267,7 @@ export class PVP
     /**
      * Check if the bot currently has a shield equipped.
      */
-    private hasShield(): boolean
-    {
+    private hasShield(): boolean {
         if (this.bot.supportFeature('doesntHaveOffHandSlot')) return false;
 
         const slot = this.bot.inventory.slots[this.bot.getEquipmentDestSlot('off-hand')];
